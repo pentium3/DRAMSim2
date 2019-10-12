@@ -298,6 +298,8 @@ void MemoryController::update()
 		//for readability's sake
 		unsigned rank = poppedBusPacket->rank;
 		unsigned bank = poppedBusPacket->bank;
+		previousOpenRowAccess = currentOpenRowAccess;
+		currentOpenRowAccess = poppedBusPacket->row;
 		switch (poppedBusPacket->busPacketType)
 		{
 			case READ_P:
@@ -308,6 +310,19 @@ void MemoryController::update()
 					PRINT(" ++ Adding Read energy to total energy");
 				}
 				burstEnergy[rank] += (IDD4R - IDD3N) * BL/2 * NUM_DEVICES;
+
+                TotalAccessCounter++;
+				if(previousOpenRowAccess == currentOpenRowAccess)
+				{
+				    TotalRowBuffHit++;
+				}
+				else
+				{
+				    TotalRowBuffMiss++;
+				    if (usedOpenRowAccess.count(currentOpenRowAccess)>0)
+				        TotalConflictMiss++;
+				}
+
 				if (poppedBusPacket->busPacketType == READ_P) 
 				{
 					//Don't bother setting next read or write times because the bank is no longer active
@@ -374,6 +389,17 @@ void MemoryController::update()
 					bankStates[rank][bank].lastCommand = WRITE;
 				}
 
+                TotalAccessCounter++;
+				if(previousOpenRowAccess == currentOpenRowAccess)
+				{
+				    TotalRowBuffHit++;
+				}
+				else
+				{
+				    TotalRowBuffMiss++;
+				    if (usedOpenRowAccess.count(currentOpenRowAccess)>0)
+				        TotalConflictMiss++;
+				}
 
 				//add energy to account for total
 				if (DEBUG_POWER)
@@ -470,6 +496,13 @@ void MemoryController::update()
 				ERROR("== Error - Popped a command we shouldn't have of type : " << poppedBusPacket->busPacketType);
 				exit(0);
 		}
+        for(const unsigned& x : usedOpenRowAccess)
+            cout<<x<<" ";
+        cout<<endl;
+        usedOpenRowAccess.insert(currentOpenRowAccess);
+        PRINT("ACCESSINGMEM  " << poppedBusPacket->busPacketType << " _ " \
+              << TotalAccessCounter << " _ " << TotalRowBuffHit << " _ " << TotalRowBuffMiss \
+              << " *** " << currentOpenRowAccess << " _ " << TotalConflictMiss);
 
 		//issue on bus and print debug
 		if (DEBUG_BUS)
