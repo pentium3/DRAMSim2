@@ -46,6 +46,7 @@
 #include "Rank.h"
 #include "CSVWriter.h"
 #include <map>
+#include <unordered_set>
 
 using namespace std;
 
@@ -122,6 +123,14 @@ private:
 
 
 	unsigned refreshRank;
+
+	unsigned TotalAccessCounter=0;
+	unsigned previousOpenRowAccess=-1;
+	unsigned currentOpenRowAccess=-1;
+	unsigned TotalRowBuffHit=0;
+	unsigned TotalRowBuffMiss=0;
+	unsigned TotalConflictMiss=0;
+    unordered_set<unsigned> usedOpenRowAccess;
 	
 public:
 	// energy values are per rank -- SST uses these directly, so make these public 
