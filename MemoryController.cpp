@@ -500,7 +500,8 @@ void MemoryController::update()
             cout<<x<<" ";
         cout<<endl;
         usedOpenRowAccess.insert(currentOpenRowAccess);
-        PRINT("ACCESSINGMEM  " << poppedBusPacket->busPacketType << " _ " \
+        PRINT("ACCESSINGMEM  " << parentMemorySystem->systemID << " _ " \
+              << poppedBusPacket->busPacketType << " _ " \
               << TotalAccessCounter << " _ " << TotalRowBuffHit << " _ " << TotalRowBuffMiss \
               << " *** " << currentOpenRowAccess << " _ " << TotalConflictMiss);
 
