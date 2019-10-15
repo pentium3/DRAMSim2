@@ -131,6 +131,8 @@ private:
 	unsigned TotalRowBuffMiss=0;
 	unsigned TotalConflictMiss=0;
     unordered_set<unsigned> usedOpenRowAccess;
+  	double _totBandwidth = 0.0;
+  	double _totRankBW[10];
 	
 public:
 	// energy values are per rank -- SST uses these directly, so make these public 

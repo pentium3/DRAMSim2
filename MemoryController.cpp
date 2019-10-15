@@ -69,6 +69,7 @@ MemoryController::MemoryController(MemorySystem *parent, CSVWriter &csvOut_, ost
 		totalTransactions(0),
 		refreshRank(0)
 {
+    memset(_totRankBW, 0, sizeof(_totRankBW));
 	//get handle on parent
 	parentMemorySystem = parent;
 
@@ -496,14 +497,14 @@ void MemoryController::update()
 				ERROR("== Error - Popped a command we shouldn't have of type : " << poppedBusPacket->busPacketType);
 				exit(0);
 		}
-        for(const unsigned& x : usedOpenRowAccess)
-            cout<<x<<" ";
-        cout<<endl;
+//        for(const unsigned& x : usedOpenRowAccess)
+//            cout<<x<<" ";
+//        cout<<endl;
         usedOpenRowAccess.insert(currentOpenRowAccess);
         PRINT("ACCESSINGMEM  " << parentMemorySystem->systemID << " _ " \
-              << poppedBusPacket->busPacketType << " _ " \
-              << TotalAccessCounter << " _ " << TotalRowBuffHit << " _ " << TotalRowBuffMiss \
-              << " *** " << currentOpenRowAccess << " _ " << TotalConflictMiss);
+              << poppedBusPacket->busPacketType << " _ " << currentOpenRowAccess << " *** " \
+              << poppedBusPacket->rank << " _ " \
+              << TotalAccessCounter << " _ " << TotalRowBuffHit << " _ " << TotalConflictMiss);
 
 		//issue on bus and print debug
 		if (DEBUG_BUS)
@@ -882,7 +883,7 @@ void MemoryController::printStats(bool finalStats)
 	PRINTN( "   Total Return Transactions : " << totalTransactions );
 	PRINT( " ("<<totalBytesTransferred <<" bytes) aggregate average bandwidth "<<totalBandwidth<<"GB/s");
 
-	double totalAggregateBandwidth = 0.0;	
+	double totalAggregateBandwidth = 0.0;
 	for (size_t r=0;r<NUM_RANKS;r++)
 	{
 
@@ -931,14 +932,21 @@ void MemoryController::printStats(bool finalStats)
 				totalAggregateBandwidth += bandwidth[SEQUENTIAL(r,b)];
 				csvOut << CSVWriter::IndexedName("Average_Latency",myChannel,r,b) << averageLatency[SEQUENTIAL(r,b)];
 			}
+			_totRankBW[r]+=totalRankBandwidth;
 			csvOut << CSVWriter::IndexedName("Rank_Aggregate_Bandwidth",myChannel,r) << totalRankBandwidth; 
-			csvOut << CSVWriter::IndexedName("Rank_Average_Bandwidth",myChannel,r) << totalRankBandwidth/NUM_RANKS; 
+			csvOut << CSVWriter::IndexedName("Rank_Average_Bandwidth",myChannel,r) << totalRankBandwidth/NUM_RANKS;
 		}
 	}
 	if (VIS_FILE_OUTPUT)
 	{
 		csvOut << CSVWriter::IndexedName("Aggregate_Bandwidth",myChannel) << totalAggregateBandwidth;
 		csvOut << CSVWriter::IndexedName("Average_Bandwidth",myChannel) << totalAggregateBandwidth / (NUM_RANKS*NUM_BANKS);
+	}
+
+    _totBandwidth += totalAggregateBandwidth;
+	PRINT("ACCESSINGMEM---Aggregate_Bandwidth :: Channel" <<myChannel<<"_Total: "<< _totBandwidth);
+	for (size_t r=0;r<NUM_RANKS;r++){
+	    PRINT("ACCESSINGMEM---Aggregate_Bandwidth :: Channel" <<myChannel<<"_Rank"<<r<<": "<<_totRankBW[r]<<"\n");
 	}
 
 	// only print the latency histogram at the end of the simulation since it clogs the output too much to print every epoch
